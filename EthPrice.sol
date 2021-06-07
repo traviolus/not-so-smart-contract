@@ -3,17 +3,13 @@
 pragma solidity ^0.7.4;
 
 contract EthPrice {
-    string currentPrice;
+    mapping(string => uint256) currentPrice;
 
-    constructor() {
-        currentPrice = "0";
+    function get(string calldata _coin) public view returns(uint256) {
+        return currentPrice[_coin];
     }
 
-    function get() public view returns(string memory) {
-        return currentPrice;
-    }
-
-    function set(string calldata _newPrice) public {
-        currentPrice = _newPrice;
+    function set(string calldata _coin, uint256 _newPrice) public {
+        currentPrice[_coin] = _newPrice;
     }
 }

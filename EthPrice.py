@@ -20,34 +20,40 @@ class KovanNetwork:
         self.contract = ''
         self.abi = [
             {
-                "inputs": [],
-                "stateMutability": "nonpayable",
-                "type": "constructor"
-            },
-            {
-                "inputs": [],
-                "name": "get",
-                "outputs": [
+                "inputs": [
                     {
                         "internalType": "string",
-                        "name": "",
+                        "name": "_coin",
                         "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "_newPrice",
+                        "type": "uint256"
                     }
                 ],
-                "stateMutability": "view",
+                "name": "set",
+                "outputs": [],
+                "stateMutability": "nonpayable",
                 "type": "function"
             },
             {
                 "inputs": [
                     {
                         "internalType": "string",
-                        "name": "_newPrice",
+                        "name": "_coin",
                         "type": "string"
                     }
                 ],
-                "name": "set",
-                "outputs": [],
-                "stateMutability": "nonpayable",
+                "name": "get",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
                 "type": "function"
             }
         ]
@@ -59,11 +65,11 @@ class KovanNetwork:
         self.contract = self.web3.eth.contract(address=self.contract_address, abi=self.abi)
         return
 
-    def get_price(self) -> str:
-        return self.contract.functions.get().call()
+    def get_price(self, coin_symbol: str) -> int:
+        return self.contract.functions.get(coin_symbol).call()
 
-    def set_price(self, new_price: str) -> None:
-        transaction = self.contract.functions.set(new_price).buildTransaction({
+    def set_price(self, coin_symbol: str, new_price: int) -> None:
+        transaction = self.contract.functions.set(coin_symbol, new_price).buildTransaction({
             'gasPrice': self.web3.eth.gasPrice,
             'nonce': int(self.web3.eth.get_transaction_count(self.account))
         })
@@ -74,29 +80,48 @@ class KovanNetwork:
         return
 
 
-def getEthPriceFromApi() -> str:
-    COINGECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
+def getIdMappingFromApi() -> dict:
+    COINGECKO_MAPPING_URL = "https://api.coingecko.com/api/v3/coins/list?include_platform=false"
+    response = requests.get(COINGECKO_MAPPING_URL)
+    response_dict = {coin["symbol"]: coin["id"] for coin in response.json()}
+    return response_dict
+
+
+def getEthPriceFromApi(coin_symbol: str) -> int:
+    id_mapping = getIdMappingFromApi()
+    coin_id = id_mapping.get(coin_symbol, None)
+    if not coin_id:
+        return -1
+    COINGECKO_API_URL = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
     response = requests.get(COINGECKO_API_URL)
     response_dict = response.json()
-    price = str(response_dict['ethereum']['usd'])
+    price = int(response_dict[coin_id]['usd'] * 1000000)
     return price
 
 
-def updatePrice() -> None:
+def updatePrice(coin_symbol: str) -> None:
+    new_price = getEthPriceFromApi(coin_symbol)
+    if new_price == -1:
+        print('Invalid coin symbol.')
+        return
     obj = KovanNetwork()
     obj.connect(CONTRACT_ADDRESS)
-    obj.set_price(getEthPriceFromApi())
+    obj.set_price(coin_symbol, new_price)
     return
 
 
-def getPrice() -> str:
+def getPrice(coin_symbol: str) -> float:
     obj = KovanNetwork()
     obj.connect(CONTRACT_ADDRESS)
-    return obj.get_price()
+    return obj.get_price(coin_symbol)/1000000
 
 
+if len(sys.argv) != 3:
+    print("Invalid argument")
+    sys.exit(0)
 cmd = sys.argv[1]
+coin_input = sys.argv[2].lower()
 if cmd == 'get':
-    print(getPrice())
+    print(getPrice(coin_input))
 if cmd == 'set':
-    updatePrice()
+    updatePrice(coin_input)
