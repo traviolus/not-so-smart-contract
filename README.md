@@ -1,5 +1,14 @@
 # not-so-smart-contract
 
+## Install libraries & dependencies
+
+This repository uses ```pipenv``` library to manage python packages.
+To initialize and install python packages specified in ```Pipfile```, run the following command in the project directory.
+```
+pipenv install
+pipenv shell
+```
+
 ## Set up bot to update ethereum price hourly [crontab]
 
 - In terminal use the following command to access *crontab* config file

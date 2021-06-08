@@ -1,0 +1,13 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+web3 = "*"
+pyband = {git = "https://github.com/bandprotocol/pyband.git"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

@@ -2,14 +2,19 @@
 
 pragma solidity ^0.7.4;
 
-contract EthPrice {
-    mapping(string => uint256) currentPrice;
+struct CoinInfo {
+    uint256 requestId;
+    uint256 currentPrice;
+}
 
-    function get(string calldata _coin) public view returns(uint256) {
-        return currentPrice[_coin];
+contract EthPrice {
+    mapping(string => CoinInfo) coinPrice;
+
+    function get(string calldata _coin) public view returns(uint256, uint256) {
+        return (coinPrice[_coin].requestId, coinPrice[_coin].currentPrice);
     }
 
-    function set(string calldata _coin, uint256 _newPrice) public {
-        currentPrice[_coin] = _newPrice;
+    function set(string calldata _coin, uint256 _requestId, uint256 _newPrice) public {
+        coinPrice[_coin] = CoinInfo(_requestId, _newPrice);
     }
 }
